@@ -1,0 +1,16 @@
+{
+    "kind": "youtube#playlistItemListResponse",
+    "etag": "4eFCj-thtsVY1_Dma1SHVqPkk5M",
+    "nextPageToken": "EAAaHlBUOkNBRWlFRUpET1VKQ01USTRORGMyTnpKR1F6WQ",
+    "items": [
+        {
+            "kind": "youtube#playlistItem",
+            "etag": "d3vvejmaEdeZmTP7GZR_WA52WV0",
+            "id": "VVVYNk9RM0RrY3NiWU5FNkg4dVFRdVZBLk9vOUViQXJjUTFj"
+        }
+    ],
+    "pageInfo": {
+        "totalResults": 903,
+        "resultsPerPage": 1
+    }
+}
