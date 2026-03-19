@@ -3,6 +3,9 @@ import pendulum
 from datetime import datetime,timedelta
 
 from api.video_stats import get_playlist_id,get_video_id,extract_video_data,save_to_json
+from datawarehouse.dwh import staging_table,core_table
+from dataquality.soda import yt_elt_data_quality
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 
 
@@ -24,6 +27,10 @@ default_args = {
     # 'end_date': datetime(2030, 12, 31, tzinfo=local_tz),
 }
 
+#Variables
+staging_schema = "staging"
+core_schema = "core"
+
 
 with DAG(
     dag_id = 'produce_json',
@@ -41,3 +48,38 @@ with DAG(
 
     #Define Dependencies
     playlist_id >> video_ids >> extract_data >> save_to_json_task
+
+
+
+
+    
+with DAG(
+    dag_id = 'update_db',
+    default_args=default_args,
+    description='DAG to process JSON file and insert data into staging and core schemas',
+    schedule='0 15 * * *',
+    catchup=False,
+) as dag:
+
+    #Define tasks
+    update_staging = staging_table()
+    update_core = core_table()
+
+    #Define dependencies
+    update_staging >> update_core
+
+
+with DAG(
+    dag_id = 'data_quality',
+    default_args=default_args,
+    description='DAG to run data quality checks on both layers in db',
+    schedule='0 16 * * *',
+    catchup=False,
+) as dag:
+
+    #Define tasks
+    soda_validate_staging = yt_elt_data_quality(staging_schema)
+    soda_validate_core = yt_elt_data_quality(core_schema)
+
+    #Define dependencies
+    soda_validate_staging >> soda_validate_core
