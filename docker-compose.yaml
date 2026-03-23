@@ -44,14 +44,17 @@
 #
 # Feel free to modify this file to suit your needs.
 ---
-x-airflow-common: &airflow-common
+x-airflow-common:
   # Use custom image that builds on top of default airflow image (currently; Default: apache/airflow:2.9.2)
   # Image stored on Dockerhub
-  image: ${DOCKERHUB_NAMESPACE}/${DOCKERHUB_REPOSITORY}:${IMAGE_TAG}
+  &airflow-common
+  image: ${DOCKERHUB_NAMESPACE}/${DOCKERHUB_REPOSITORY}:latest
   # Use the .env file to read the connection params and variables - SWITCH THIS OFF WHEN USING GITHUB ACTIONS
-  env_file:
-    - .env
-  environment: &airflow-common-env # Set executor to CeleryExecutor
+  # env_file:
+  #   - .env
+  environment:
+    # Set executor to CeleryExecutor
+    &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     # Use SQLAlchemy to connect to Airflow's metadata Postgres database using the psycopg2 driver
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${METADATA_DATABASE_USERNAME}:${METADATA_DATABASE_PASSWORD}@${POSTGRES_CONN_HOST}:${POSTGRES_CONN_PORT}/${METADATA_DATABASE_NAME}
@@ -108,23 +111,23 @@ services:
     container_name: postgres
     image: postgres:13
     # Use the .env file to read the connection params - SWITCH THIS OFF WHEN USING GITHUB ACTIONS
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     # Env vars after POSTGRES_PASSWORD are needed for CI-CD workflow - SWITCH THIS ALL ON WHEN USING GITHUB ACTIONS
     environment:
       - POSTGRES_USER=${POSTGRES_CONN_USERNAME}
       - POSTGRES_PASSWORD=${POSTGRES_CONN_PASSWORD}
-    #   - METADATA_DATABASE_NAME=${METADATA_DATABASE_NAME}
-    #   - METADATA_DATABASE_USERNAME=${METADATA_DATABASE_USERNAME}
-    #   - METADATA_DATABASE_PASSWORD=${METADATA_DATABASE_PASSWORD}
-    #   - ELT_DATABASE_NAME=${ELT_DATABASE_NAME}
-    #   - ELT_DATABASE_USERNAME=${ELT_DATABASE_USERNAME}
-    #   - ELT_DATABASE_PASSWORD=${ELT_DATABASE_PASSWORD}
-    #   - CELERY_BACKEND_NAME=${CELERY_BACKEND_NAME}
-    #   - CELERY_BACKEND_USERNAME=${CELERY_BACKEND_USERNAME}
-    #   - CELERY_BACKEND_PASSWORD=${CELERY_BACKEND_PASSWORD}
-    #   - POSTGRES_CONN_HOST=${POSTGRES_CONN_HOST}
-    #   - POSTGRES_CONN_PORT=${POSTGRES_CONN_PORT}
+      - METADATA_DATABASE_NAME=${METADATA_DATABASE_NAME}
+      - METADATA_DATABASE_USERNAME=${METADATA_DATABASE_USERNAME}
+      - METADATA_DATABASE_PASSWORD=${METADATA_DATABASE_PASSWORD}
+      - ELT_DATABASE_NAME=${ELT_DATABASE_NAME}
+      - ELT_DATABASE_USERNAME=${ELT_DATABASE_USERNAME}
+      - ELT_DATABASE_PASSWORD=${ELT_DATABASE_PASSWORD}
+      - CELERY_BACKEND_NAME=${CELERY_BACKEND_NAME}
+      - CELERY_BACKEND_USERNAME=${CELERY_BACKEND_USERNAME}
+      - CELERY_BACKEND_PASSWORD=${CELERY_BACKEND_PASSWORD}
+      - POSTGRES_CONN_HOST=${POSTGRES_CONN_HOST}
+      - POSTGRES_CONN_PORT=${POSTGRES_CONN_PORT}
     ports:
       - 5432:5432
     volumes:
@@ -132,15 +135,7 @@ services:
       - ./docker/postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
     # Test connection to 1 of 3 dbs, the metadata db in this case
     healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready",
-          "-U",
-          "${POSTGRES_CONN_USERNAME}",
-          "-d",
-          "${METADATA_DATABASE_NAME}",
-        ]
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_CONN_USERNAME}", "-d", "${METADATA_DATABASE_NAME}" ]
       interval: 10s
       retries: 5
       start_period: 5s
@@ -154,7 +149,7 @@ services:
     expose:
       - 6379
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 30s
       retries: 50
@@ -168,7 +163,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -184,7 +179,7 @@ services:
     command: scheduler
     container_name: airflow-scheduler
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8974/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -309,7 +304,6 @@ services:
       - bash
       - -c
       - airflow
-
   # # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
   # # or by explicitly targeted on the command line e.g. docker-compose up flower.
   # # See: https://docs.docker.com/compose/profiles/
